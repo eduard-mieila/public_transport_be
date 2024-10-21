@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions
 from .models import Route, Station, Trip, Driver, Vehicle, Subscription, RouteStation
-from .serializers import RouteSerializer, RoutePostSerializer, StationSerializer, TripSerializer, DriverSerializer, VehicleSerializer, SubscriptionSerializer, UserSerializer, RouteStationSerializer
+from .serializers import RouteSerializer, RoutePostSerializer, StationSerializer, TripGetSerializer, TripSetSerializer, DriverGetSerializer, DriverSetSerializer, VehicleSerializer, SubscriptionSerializer, UserSerializer, RouteStationSerializer
 from django.contrib.auth.models import Group, User
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -29,12 +29,18 @@ class StationViewSet(viewsets.ModelViewSet):
 # ViewSet for Trip
 class TripViewSet(viewsets.ModelViewSet):
     queryset = Trip.objects.all()
-    serializer_class = TripSerializer
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            return TripSetSerializer
+        return TripGetSerializer
 
 # ViewSet for Driver
 class DriverViewSet(viewsets.ModelViewSet):
     queryset = Driver.objects.all()
-    serializer_class = DriverSerializer
+    def get_serializer_class(self):
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            return DriverSetSerializer
+        return DriverGetSerializer
 
 # ViewSet for Vehicle
 class VehicleViewSet(viewsets.ModelViewSet):

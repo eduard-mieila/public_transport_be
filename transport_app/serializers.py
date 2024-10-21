@@ -8,25 +8,20 @@ class StationSerializer(serializers.ModelSerializer):
         model = Station
         fields = ['id', 'name', 'location']
 
-class StationIDSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Station
-        fields = ['id']  # Return only the ID
-
 # Serializer for RouteStation (to handle the ordered list of stations)
 class RouteStationSerializer(serializers.ModelSerializer):
     station = serializers.PrimaryKeyRelatedField(queryset=Station.objects.all())
     route = serializers.PrimaryKeyRelatedField(queryset=Route.objects.all())
     class Meta:
         model = RouteStation
-        fields = ['route', 'station', 'order'] 
+        fields = ['id', 'route', 'station', 'order', 'time_from_start'] 
 
 class RouteStationFullStationSerializer(serializers.ModelSerializer):
     station = StationSerializer()
     # route = serializers.PrimaryKeyRelatedField(queryset=Route.objects.all())
     class Meta:
         model = RouteStation
-        fields = [ 'station', 'order'] 
+        fields = ['id', 'station', 'order', 'time_from_start'] 
 
 # Serializer for Route
 class RouteSerializer(serializers.ModelSerializer):
@@ -40,9 +35,6 @@ class RouteSerializer(serializers.ModelSerializer):
         fields = ['id', 'start_station', 'end_station', 'stations']
 
 class RoutePostSerializer(serializers.ModelSerializer):
-    # stations = StationIDSerializer(many=True, required=False)  # Folosește doar ID-ul pentru POST/PUT
-    # start_station = StationIDSerializer(many=True, required=True)  # Folosește doar ID-ul pentru POST/PUT
-    # end_station = StationIDSerializer(many=True, required=True)  # Folosește doar ID-ul pentru POST/PUT
     stations = serializers.PrimaryKeyRelatedField(queryset=Station.objects.all(), many=True, required=False)
     start_station = serializers.PrimaryKeyRelatedField(queryset=Station.objects.all(), required=True)
     end_station = serializers.PrimaryKeyRelatedField(queryset=Station.objects.all(), required=True)
@@ -65,24 +57,49 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = '__all__'
 
-# Serializer for Driver
-class DriverSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()  # To display the user info
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
 
+# Serializer for Driver
+class DriverSetSerializer(serializers.ModelSerializer):
+    # user = serializers.StringRelatedField()  # To display the user info
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
+    class Meta:
+        model = Driver
+        fields = ['id', 'full_name', 'hire_date', 'license_number', 'user']
+
+
+class DriverGetSerializer(serializers.ModelSerializer):
+    # user = serializers.StringRelatedField()  # To display the user info
+    user = UserSerializer()
     class Meta:
         model = Driver
         fields = ['id', 'full_name', 'hire_date', 'license_number', 'user']
 
 # Serializer for Trip
-class TripSerializer(serializers.ModelSerializer):
+class TripGetSerializer(serializers.ModelSerializer):
     route = RouteSerializer()
-    driver = DriverSerializer()
+    driver = DriverGetSerializer()
     vehicle = VehicleSerializer()
     current_station = StationSerializer()
 
     class Meta:
         model = Trip
-        fields = ['id', 'route', 'vehicle', 'driver', 'current_station', 'status']
+        fields = ['id', 'route', 'vehicle', 'driver', 'start_time', 'end_time', 'current_station', 'status']
+
+class TripSetSerializer(serializers.ModelSerializer):
+    route = serializers.PrimaryKeyRelatedField(queryset=Route.objects.all(), required=True)
+    driver = serializers.PrimaryKeyRelatedField(queryset=Driver.objects.all(), required=True)
+    vehicle = serializers.PrimaryKeyRelatedField(queryset=Vehicle.objects.all(), required=True)
+    current_station = serializers.PrimaryKeyRelatedField(queryset=Station.objects.all(), required=False)
+    start_time = serializers.DateTimeField(required=False)
+    end_time = serializers.DateTimeField(required=False)
+    status = serializers.CharField(required=False, default='Scheduled')
+    class Meta:
+        model = Trip
+        fields = ['id', 'route', 'vehicle', 'driver', 'start_time', 'end_time','current_station', 'status']
 
 # Serializer for Subscription
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -92,7 +109,3 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = ['id', 'traveler', 'start_date', 'end_date']
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'

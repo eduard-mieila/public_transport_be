@@ -5,7 +5,7 @@ from django.db import models
 
 class Driver(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     full_name = models.CharField(max_length=255)
     hire_date = models.DateField()
     license_number = models.CharField(max_length=50)
@@ -35,7 +35,8 @@ class RouteStation(models.Model):
     station = models.ForeignKey(Station, on_delete=models.CASCADE)
     route = models.ForeignKey('Route', on_delete=models.CASCADE)
     order = models.PositiveIntegerField()  # Field to store the order of the station in the route
-
+    # add a field for distance in minutes from start_station
+    time_from_start = models.PositiveIntegerField(null=False, default=0)  # Field to store the distance in minutes from the start station
     class Meta:
         ordering = ['order']  # Order by the "order" field
 
@@ -57,7 +58,6 @@ class Route(models.Model):
     start_station = models.ForeignKey(Station, related_name='start_routes', on_delete=models.CASCADE)
     end_station = models.ForeignKey(Station, related_name='end_routes', on_delete=models.CASCADE)
     stations = models.ManyToManyField(Station, through=RouteStation, related_name='stations_list')
-
     def __str__(self):
         return f"{self.route_number}: {self.start_station.name} to {self.end_station.name}"
 
@@ -66,10 +66,11 @@ class Trip(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     route = models.ForeignKey(Route, on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    driver = models.ForeignKey(Driver, on_delete=models.CASCADE)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     current_station = models.ForeignKey(Station, null=True, blank=True, on_delete=models.SET_NULL)
-    status = models.CharField(max_length=20, choices=[('in_station', 'In Station'), ('left_station', 'Left Station')])
+    status = models.CharField(max_length=20, choices=[('scheduled', 'Scheduled'),('in_station', 'In Station'), ('left_station', 'Left Station')])
 
     def __str__(self):
         return f"Trip on route {self.route.route_number} by {self.vehicle.license_plate}"
